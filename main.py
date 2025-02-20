@@ -12,22 +12,14 @@ import random
 import time
 inflect_engine = inflect.engine()
 openai.api_key = ""
-huge_number_range = list(range(32))
-category_pairs = [
-    "Prime Number vs. Composite Number",
-    "Positive Number vs. Negative Number",
-    "Even Number vs. Odd Number",
-    "Divisible by 2 vs. Not Divisible by 2",
-    "Divisible by 3 vs. Not Divisible by 3",
-    "Divisible by 5 vs. Not Divisible by 5",
-    "Prime Power vs. Non-Prime Power",
-    "Number Less than 0 vs. Number Greater than or Equal to 0",
-    "Multiple of 7 vs. Non-multiple of 7",
-    "Multiple of 11 vs. Non-multiple of 11",
-    "Number that are Powers of 2 vs. Number that are not Powers of 2",
-    "Number with an Even Number of Positive Divisors vs. Number with an Odd Number of Positive Divisors",
-    "Even Power of 2 vs. Odd Power of 2",
-]
+huge_number_range = list(range(100))
+category_enumeration = ["Positive Numbers", "Negative Numbers", "Even Numbers", "Odd Numbers"]
+category_pairs = {
+    "Positive Numbers": list(range(1, 100)),
+    "Negative Numbers": list(range(-1, -100, -1)),
+    "Even Numbers": list(range(-100, 101, 2)),
+    "Odd Numbers": list(range(-101, 101, 2)),
+}
 def list_audio_devices():
     p = pyaudio.PyAudio()
     device_count = p.get_device_count()
@@ -67,28 +59,51 @@ def pan_and_play(text, output_device_index, left_ear_intensity, right_ear_intens
     sound = text_to_speech_in_memory(text)
     play_sound_concurrently(sound, output_device_index, left_ear_intensity, right_ear_intensity)
 def generate_matrix(gamemode, output_device_index):
-    a, b = gamemode.split(" vs. ")
-    result = random.choice([a, b])
-    print(result)
-    minimum_range_a = random.choice(huge_number_range)
-    minimum_range_b = random.choice(huge_number_range)
+    result_a = category_pairs[category_enumeration[gamemode]]
+    result_b = category_pairs[category_enumeration[gamemode + 1]]
+    chosen_index = gamemode
+    if random.random() < 0.5:
+        chosen_index = gamemode + 1
+        result_a, result_b = result_b, result_a
+    precise_a = random.choice(result_a)
+    precise_b = random.choice(result_b)
     response_correct = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages = [
-            {"role": "user", "content": "Generate a 2x2 matrix in the example matrix index format '11,12,21,22' WITHOUT the quotation marks where the determinant of the matrix (Use the determinant formula: (11 * 22) - (12 * 21)) belongs to the category: " + result + ". Ensure that the absolute value of the determinant is above " + str(minimum_range_a) + ". The randomized matrix can only be composed of integers. ONLY PROVIDE THE MATRIX IN THE EXAMPLE FORM WITH NO ESCAPE SEQUENCE CHARACTERS."},
+        model="gpt-4o",
+        messages=[
+            {
+                "role": "user",
+                "content": (
+                    "Generate a 2x2 matrix in the exact format '11,12,21,22' (without quotation marks). "
+                    "Use the determinant formula: (11 * 22) - (12 * 21). "
+                    "The determinant of the matrix must be " + str(precise_a) + ". "
+                    "Try your best to avoid simple patterns"
+                    "Do not include any additional text, explanation, or escape sequence characters. "
+                    "Provide the matrix in the specified format."
+                ),
+            }
         ],
         temperature=0.0,
-        n=8,
+        n=1,
     )
     response_incorrect = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages = [
-            {"role": "user", "content": "Generate a 2x2 matrix in the example matrix index format '11,12,21,22' WITHOUT the quotation marks where the determinant of the matrix (Use the determinant formula: (11 * 22) - (12 * 21).) DOES NOT belong to the category: " + result + ". Ensure that the absolute value of the determinant is above " + str(minimum_range_b) + ". The randomized matrix can only be composed of integers. ONLY PROVIDE THE MATRIX IN THE EXAMPLE FORM WITH NO ESCAPE SEQUENCE CHARACTERS."},
+        model="gpt-4o",
+        messages=[
+            {
+                "role": "user",
+                "content": (
+                    "Generate a 2x2 matrix in the exact format '11,12,21,22' (without quotation marks). "
+                    "Use the determinant formula: (11 * 22) - (12 * 21). "
+                    "The determinant of the matrix must be " + str(precise_b) + ". "
+                    "Try your best to avoid simple patterns"
+                    "Do not include any additional text, explanation, or escape sequence characters. "
+                    "Provide the matrix in the specified format."
+                ),
+            }
         ],
         temperature=0.0,
-        n=8,
+        n=1,
     )
-    pan_and_play("The following category is " + result, output_device_index, 1.0 , 1.0)
+    pan_and_play("The following category is " + category_enumeration[chosen_index], output_device_index, 1.0 , 1.0)
     return [[inflect_engine.number_to_words(int(x.replace("'", "").replace("`", "").replace(r"  \n0", ""))) for x in random.choice(response_correct.choices).message["content"].strip().split(',')], [inflect_engine.number_to_words(int(x.replace("'", "").replace("`", "").replace(r"  \n0", ""))) for x in random.choice(response_incorrect.choices).message["content"].strip().split(',')]]
 devices = list_audio_devices()
 selected_device_index = None
@@ -108,7 +123,7 @@ while True:
         pan_and_play("Listen with your left ear", selected_device_index, 1.0, 1.0)
     else:
         pan_and_play("Listen with your right ear", selected_device_index, 1.0, 1.0)    
-    gamemode = random.choice(category_pairs)    
+    gamemode = random.choice(list(range(0, len(category_enumeration) - 1, 2)))
     responses_data = generate_matrix(gamemode, selected_device_index)
     correct_speech = ' '.join(map(str, responses_data[0]))
     incorrect_speech = ' '.join(map(str, responses_data[1]))
