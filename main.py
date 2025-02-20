@@ -10,7 +10,6 @@ import keyboard
 import random
 import time
 inflect_engine = inflect.engine()
-huge_number_range = list(range(25))
 MATRIX_SIZE = 2
 UNSIGNED_END = 20
 UNSIGNED_DETERMINANT_RANGE = 50 
