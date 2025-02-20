@@ -11,14 +11,16 @@ import random
 import time
 inflect_engine = inflect.engine()
 huge_number_range = list(range(25))
+MATRIX_SIZE = 2
+UNSIGNED_END = 20
+UNSIGNED_DETERMINANT_RANGE = 50 
 category_enumeration = ["Positive Numbers", "Negative Numbers", "Even Numbers", "Odd Numbers"]
 category_pairs = {
-    "Positive Numbers": list(range(1, 50)),
-    "Negative Numbers": list(range(-1, -50, -1)),
-    "Even Numbers": list(range(-50, 51, 2)),
-    "Odd Numbers": list(range(-51, 51, 2)),
+    "Positive Numbers": list(range(1, UNSIGNED_DETERMINANT_RANGE)),
+    "Negative Numbers": list(range(-1, -UNSIGNED_DETERMINANT_RANGE, -1)),
+    "Even Numbers": list(range(-UNSIGNED_DETERMINANT_RANGE, UNSIGNED_DETERMINANT_RANGE + 1, 2)),
+    "Odd Numbers": list(range(-UNSIGNED_DETERMINANT_RANGE, UNSIGNED_DETERMINANT_RANGE + 1, 2)),
 }
-MATRIX_SIZE = 2
 def list_audio_devices():
     p = pyaudio.PyAudio()
     device_count = p.get_device_count()
@@ -61,7 +63,7 @@ def generate_matrix(gamemode, output_device_index):
     result_a = category_pairs[category_enumeration[gamemode]]
     response_correct = []
     while True:
-        random_compressed_matrix = list(range(-25, 25))
+        random_compressed_matrix = list(range(-UNSIGNED_END, UNSIGNED_END))
         random.shuffle(random_compressed_matrix)
         random_compressed_matrix = random_compressed_matrix[:int(MATRIX_SIZE ** 2)]
         random_matrix = []
@@ -75,7 +77,7 @@ def generate_matrix(gamemode, output_device_index):
             break
     response_incorrect = []
     while True:
-        random_compressed_matrix = list(range(-20, 20))
+        random_compressed_matrix = list(range(-UNSIGNED_END, UNSIGNED_END))
         random.shuffle(random_compressed_matrix)
         random_compressed_matrix = random_compressed_matrix[:int(MATRIX_SIZE ** 2)]
         random_matrix = []
